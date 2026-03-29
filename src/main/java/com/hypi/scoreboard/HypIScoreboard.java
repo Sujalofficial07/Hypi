@@ -1,6 +1,7 @@
 package com.hypi.scoreboard;
 
 import com.hypi.economy.EconomyData;
+import com.hypi.level.SkyBlockLevel;
 import com.hypi.location.LocationManager;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.scoreboard.*;
@@ -10,85 +11,81 @@ import net.minecraft.text.Text;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 public class HypIScoreboard {
 
-    private static final String OBJECTIVE_NAME = "hypi_sidebar";
-    private static int tickCounter = 0;
-    // Track scoreboard per player
-    private static final Map<UUID, ScoreboardObjective> playerObjectives = new HashMap<>();
+    private static final String OBJ = "hypi_sb";
+    private static int tick = 0;
 
     public static void register() {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            tickCounter++;
-            // Update every 10 ticks (0.5 seconds) for performance
-            if (tickCounter % 10 != 0) return;
-
+            tick++;
+            if (tick % 10 != 0) return;
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                 updateScoreboard(server, player);
-                // Update location every tick
                 LocationManager.updatePlayerLocation(player);
             }
         });
     }
 
     private static void updateScoreboard(MinecraftServer server, ServerPlayerEntity player) {
-        Scoreboard scoreboard = player.getScoreboard();
+        Scoreboard sb = server.getScoreboard();
 
         // Remove old objective
-        ScoreboardObjective existing = scoreboard.getNullableObjective(OBJECTIVE_NAME);
-        if (existing != null) {
-            scoreboard.removeObjective(existing);
-        }
+        ScoreboardObjective old = sb.getNullableObjective(OBJ);
+        if (old != null) sb.removeObjective(old);
 
-        // Create new objective
-        ScoreboardObjective objective = scoreboard.addObjective(
-            OBJECTIVE_NAME,
+        // Create new objective — 4 arg version for 1.20.1
+        ScoreboardObjective obj = sb.addObjective(
+            OBJ,
             ScoreboardCriterion.DUMMY,
             Text.literal("§6§lSKYBLOCK"),
-            ScoreboardCriterion.RenderType.INTEGER,
-            true,
-            null
+            ScoreboardCriterion.RenderType.INTEGER
         );
 
-        // Set display slot to sidebar
-        scoreboard.setObjectiveSlot(ScoreboardDisplaySlot.SIDEBAR, objective);
+        // Set sidebar display slot
+        sb.setObjectiveSlot(ScoreboardDisplaySlot.VALUES[1], obj);
 
-        // Get current date
-        String date = LocalDate.now().format(DateTimeFormatter.ofPattern("MM/dd/yy"));
+        // Build lines
+        String date     = LocalDate.now().format(DateTimeFormatter.ofPattern("MM/dd/yy"));
+        String locName  = LocationManager.getCurrentLocation(player);
+        String locDisp  = locName.isEmpty() ? "§7Unknown"
+                        : LocationManager.getDisplayName(locName);
+        String purse    = EconomyData.format(EconomyData.getPurse(player));
+        String bank     = EconomyData.format(EconomyData.getBank(player));
+        int    level    = SkyBlockLevel.getLevel(player);
+        String progress = SkyBlockLevel.getProgressBar(player);
 
-        // Get location
-        String locationName = LocationManager.getCurrentLocation(player);
-        String locationDisplay = locationName.isEmpty() ? "§7Unknown" :
-            LocationManager.getDisplayName(locationName);
-
-        // Get economy
-        String purse = EconomyData.format(EconomyData.getPurse(player));
-        String bank = EconomyData.format(EconomyData.getBank(player));
-
-        // Build scoreboard lines (Hypixel style, bottom to top order)
-        // Line numbers go from high (top) to low (bottom)
-        setLine(scoreboard, objective, "§r§f ", 14);                          // blank
-        setLine(scoreboard, objective, "§e" + date, 13);                      // date
-        setLine(scoreboard, objective, "§r§1 ", 12);                          // blank
-        setLine(scoreboard, objective, "§7⏣ " + locationDisplay, 11);         // location
-        setLine(scoreboard, objective, "§r§2 ", 10);                          // blank
-        setLine(scoreboard, objective, "§7Purse: §6" + purse + " Coins", 9);  // purse
-        setLine(scoreboard, objective, "§7Bank: §6" + bank + " Coins", 8);    // bank
-        setLine(scoreboard, objective, "§r§3 ", 7);                           // blank
-        setLine(scoreboard, objective, "§fSkills:", 6);                       // skills header
-        setLine(scoreboard, objective, "§7Coming soon...", 5);                // placeholder
-        setLine(scoreboard, objective, "§r§4 ", 4);                           // blank
-        setLine(scoreboard, objective, "§ewww.hypi.net", 3);                  // server name
-        setLine(scoreboard, objective, "§r§5 ", 2);                           // blank
+        setLine(sb, obj, "§r§f ",        14);
+        setLine(sb, obj, "§e" + date,    13);
+        setLine(sb, obj, "§r§1 ",        12);
+        setLine(sb, obj, "§7⏣ " + locDisp, 11);
+        setLine(sb, obj, "§r§2 ",        10);
+        setLine(sb, obj, "§7Purse: §6" + purse + " Coins", 9);
+        setLine(sb, obj, "§7Bank: §6"  + bank  + " Coins", 8);
+        setLine(sb, obj, "§r§3 ",         7);
+        setLine(sb, obj, "§fLevel: §e" + level, 6);
+        setLine(sb, obj, progress,         5);
+        setLine(sb, obj, "§r§4 ",         4);
+        setLine(sb, obj, "§ewww.hypi.net", 3);
+        setLine(sb, obj, "§r§5 ",         2);
     }
 
-    private static void setLine(Scoreboard scoreboard, ScoreboardObjective objective,
-                                 String text, int score) {
-        ScoreHolder holder = ScoreHolder.fromName(text);
-        scoreboard.getOrCreateScore(holder, objective).setScore(score);
+    private static void setLine(Scoreboard sb, ScoreboardObjective obj, String text, int score) {
+        // 1.20.1 uses Team fake players for scoreboard lines
+        String teamName = "hypi_line_" + score;
+
+        // Create team if not exists
+        Team team = sb.getTeam(teamName);
+        if (team == null) team = sb.addTeam(teamName);
+        team.setPrefix(Text.literal(text));
+
+        // Add fake player to team
+        String fakePlayer = "§" + (char)('a' + score);
+        sb.addScoreHolderToTeam(fakePlayer, team);
+
+        // Set score
+        ScoreboardPlayerScore s = sb.getPlayerScore(fakePlayer, obj);
+        s.setScore(score);
     }
 }
