@@ -1,5 +1,6 @@
 package com.hypi.commands;
 
+import com.hypi.world.IslandManager;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -13,7 +14,7 @@ public class IslandCommands {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 
-        // /hub command - sends player to hub (overworld spawn)
+        // /hub command
         dispatcher.register(CommandManager.literal("hub")
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().getPlayer();
@@ -27,26 +28,18 @@ public class IslandCommands {
                         player.getYaw(),
                         player.getPitch()
                     );
-                    player.sendMessage(Text.literal("§aWelcome to the Hub!"), false);
+                    player.sendMessage(Text.literal("§aWelcome back to the Hub!"), false);
                 }
                 return 1;
             })
         );
 
-        // /is command - sends player to their island
+        // /is command - now uses IslandManager
         dispatcher.register(CommandManager.literal("is")
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().getPlayer();
                 if (player != null) {
-                    ServerWorld island = player.getServer().getWorld(World.OVERWORLD);
-                    // Island spawn will be updated once island dimension is added
-                    player.sendMessage(Text.literal("§eTeleporting to your island..."), false);
-                    player.teleport(island,
-                        0.5, 65, 0.5,
-                        player.getYaw(),
-                        player.getPitch()
-                    );
-                    player.sendMessage(Text.literal("§aWelcome to your Island!"), false);
+                    IslandManager.teleportToIsland(player);
                 }
                 return 1;
             })
