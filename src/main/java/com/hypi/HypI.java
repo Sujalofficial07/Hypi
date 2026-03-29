@@ -26,42 +26,30 @@ public class HypI implements ModInitializer {
     public void onInitialize() {
         LOGGER.info("HypI Initializing...");
 
-        // Core systems
         WorldRules.register();
         CoinDropHandler.register();
         SkyBlockXPEvents.register();
         HypIScoreboard.register();
-
-        // GUI triggers
         SkyBlockMenuTrigger.register();
         FirstJoinHandler.register();
 
-        // Commands
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+        CommandRegistrationCallback.EVENT.register((dispatcher, reg, env) -> {
             IslandCommands.register(dispatcher);
             BankCommands.register(dispatcher);
             LocationCommands.register(dispatcher);
             MenuCommands.register(dispatcher);
         });
 
-        // Default locations
         registerDefaultLocations();
-
         LOGGER.info("HypI Loaded!");
     }
 
     private void registerDefaultLocations() {
-        LocationManager.addLocation(
-            "hub_spawn", "§aHub",
+        LocationManager.addLocation("hub_spawn", "§aHub",
             "minecraft:overworld",
-            new BlockPos(-50, 60, -50),
-            new BlockPos(50, 120, 50)
-        );
-        LocationManager.addLocation(
-            "player_island", "§bYour Island",
+            new BlockPos(-50, 60, -50), new BlockPos(50, 120, 50));
+        LocationManager.addLocation("player_island", "§bYour Island",
             "hypi:island_world",
-            new BlockPos(-500, 0, -500),
-            new BlockPos(500, 384, 500)
-        );
+            new BlockPos(-500, 0, -500), new BlockPos(500, 384, 500));
     }
 }
