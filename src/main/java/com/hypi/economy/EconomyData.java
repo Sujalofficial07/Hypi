@@ -1,65 +1,50 @@
 package com.hypi.economy;
 
-import net.minecraft.nbt.NbtCompound;
+import com.hypi.data.PlayerDataManager;
 import net.minecraft.server.network.ServerPlayerEntity;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 public class EconomyData {
 
-    // Stores purse (coins on hand) per player
-    private static final Map<UUID, Double> purses = new HashMap<>();
-    // Stores bank balance per player
-    private static final Map<UUID, Double> banks = new HashMap<>();
-
-    // === PURSE ===
-    public static double getPurse(ServerPlayerEntity player) {
-        return purses.getOrDefault(player.getUuid(), 0.0);
+    public static double getPurse(ServerPlayerEntity p) {
+        return PlayerDataManager.get(p).purse;
     }
 
-    public static void setPurse(ServerPlayerEntity player, double amount) {
-        purses.put(player.getUuid(), Math.max(0, amount));
+    public static void setPurse(ServerPlayerEntity p, double v) {
+        PlayerDataManager.get(p).purse = Math.max(0, v);
     }
 
-    public static void addPurse(ServerPlayerEntity player, double amount) {
-        setPurse(player, getPurse(player) + amount);
+    public static void addPurse(ServerPlayerEntity p, double v) {
+        setPurse(p, getPurse(p) + v);
     }
 
-    public static boolean takePurse(ServerPlayerEntity player, double amount) {
-        if (getPurse(player) < amount) return false;
-        setPurse(player, getPurse(player) - amount);
+    public static boolean takePurse(ServerPlayerEntity p, double v) {
+        if (getPurse(p) < v) return false;
+        setPurse(p, getPurse(p) - v);
         return true;
     }
 
-    // === BANK ===
-    public static double getBank(ServerPlayerEntity player) {
-        return banks.getOrDefault(player.getUuid(), 0.0);
+    public static double getBank(ServerPlayerEntity p) {
+        return PlayerDataManager.get(p).bank;
     }
 
-    public static void setBank(ServerPlayerEntity player, double amount) {
-        banks.put(player.getUuid(), Math.max(0, amount));
+    public static void setBank(ServerPlayerEntity p, double v) {
+        PlayerDataManager.get(p).bank = Math.max(0, v);
     }
 
-    public static void addBank(ServerPlayerEntity player, double amount) {
-        setBank(player, getBank(player) + amount);
+    public static void addBank(ServerPlayerEntity p, double v) {
+        setBank(p, getBank(p) + v);
     }
 
-    public static boolean takeBank(ServerPlayerEntity player, double amount) {
-        if (getBank(player) < amount) return false;
-        setBank(player, getBank(player) - amount);
+    public static boolean takeBank(ServerPlayerEntity p, double v) {
+        if (getBank(p) < v) return false;
+        setBank(p, getBank(p) - v);
         return true;
     }
 
-    // === FORMATTING (like Hypixel: 1,234.5) ===
     public static String format(double amount) {
-        if (amount >= 1_000_000_000)
-            return String.format("%.1fB", amount / 1_000_000_000);
-        if (amount >= 1_000_000)
-            return String.format("%.1fM", amount / 1_000_000);
-        if (amount >= 1_000)
-            return String.format("%.1fk", amount / 1_000);
+        if (amount >= 1_000_000_000) return String.format("%.1fB", amount / 1_000_000_000);
+        if (amount >= 1_000_000)     return String.format("%.1fM", amount / 1_000_000);
+        if (amount >= 1_000)         return String.format("%.1fk", amount / 1_000);
         return String.format("%.1f", amount);
     }
 }
