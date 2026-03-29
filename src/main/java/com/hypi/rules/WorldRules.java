@@ -1,18 +1,12 @@
 package com.hypi.rules;
 
+import com.hypi.world.IslandDimension;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class WorldRules {
-
-    // Hub world dimension key (overworld is used as hub)
-    public static final String HUB_DIMENSION = "minecraft:overworld";
-    // Island world dimension key
-    public static final String ISLAND_DIMENSION = "hypi:island_world";
 
     public static void register() {
 
@@ -42,10 +36,10 @@ public class WorldRules {
     }
 
     public static boolean isHubWorld(World world) {
-        return world.getRegistryKey().getValue().toString().equals(HUB_DIMENSION);
+        return world.getRegistryKey().equals(World.OVERWORLD);
     }
 
     public static boolean isIslandWorld(World world) {
-        return world.getRegistryKey().getValue().toString().equals(ISLAND_DIMENSION);
+        return world.getRegistryKey().equals(IslandDimension.ISLAND_WORLD_KEY);
     }
 }
